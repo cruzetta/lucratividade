@@ -307,14 +307,8 @@
                     <h2 class="text-2xl font-bold mb-4 text-slate-900">Painel Interativo de Produtos</h2>
                     <div id="interactive-cards-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
                 </div>
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <div class="card"><h2 class="text-2xl font-bold mb-4 text-slate-900">Análise de Custos por Unidade</h2><div id="unit-cost-analysis" class="space-y-4"></div></div>
-                    <div class="card"><h2 class="text-2xl font-bold mb-4 text-slate-900">Planeamento de Metas</h2>
-                        <div class="space-y-6">
-                            <div><h3 class="text-lg font-semibold text-indigo-700">Cenário 1: Descobrir o Preço Ideal</h3><p class="text-sm text-slate-600 mb-2">Para atingir sua meta de lucro com as quantidades atuais, os preços deveriam ser:</p><div id="price-scenario-results" class="space-y-2"></div></div>
-                            <div><h3 class="text-lg font-semibold text-indigo-700">Cenário 2: Descobrir a Venda Necessária</h3><p class="text-sm text-slate-600 mb-2">Para atingir sua meta de lucro com os preços atuais, as vendas deveriam ser:</p><div id="quantity-scenario-results" class="space-y-2"></div></div>
-                        </div>
-                    </div>
+                <div class="grid grid-cols-1 gap-8">
+                    <div class="card"><h2 class="text-2xl font-bold mb-4 text-slate-900">Análise de Custos por Unidade</h2><div id="unit-cost-analysis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div></div>
                 </div>
                 <div class="mt-8 text-center">
                     <button id="export-calculator-csv-btn" class="bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg hover:bg-gray-800 flex items-center justify-center mx-auto hidden">
@@ -717,8 +711,6 @@
             const simulationPanel = section.querySelector('#simulation-panel');
             const interactiveCardsContainer = section.querySelector('#interactive-cards-container');
             const unitCostAnalysis = section.querySelector('#unit-cost-analysis');
-            const priceScenarioResults = section.querySelector('#price-scenario-results');
-            const quantityScenarioResults = section.querySelector('#quantity-scenario-results');
             const exportCsvBtn = section.querySelector('#export-calculator-csv-btn');
             const importBtn = section.querySelector('#import-calculator-products-btn');
             const csvInput = section.querySelector('#calculator-csv-input');
@@ -810,14 +802,13 @@
                 });
 
                 let analysisData = [];
-                unitCostAnalysis.innerHTML = '';
                 if (totalUnitsSold > 0 && (1 - variableCostsPercent) > 0) {
                     const fixedCostPerUnit = fixedCosts / totalUnitsSold;
-                    productsData.forEach(p => {
+                    const analysisHTML = productsData.map(p => {
                         const breakEvenPrice = (p.directCost + fixedCostPerUnit) / (1 - variableCostsPercent);
                         analysisData.push({name: p.name, breakEvenPrice});
-                        unitCostAnalysis.innerHTML += `
-                            <div class="border p-4 rounded-lg space-y-3">
+                        return `
+                            <div class="border p-4 rounded-lg space-y-3 bg-white">
                                 <h4 class="font-bold text-lg text-slate-800">${p.name}</h4>
                                 <div class="highlight-card p-4 rounded-lg text-center">
                                     <h5 class="font-semibold text-yellow-800">Ponto de Equilíbrio por Unidade</h5>
@@ -826,38 +817,13 @@
                                 </div>
                             </div>
                         `;
-                    });
+                    }).join('');
+                    unitCostAnalysis.innerHTML = analysisHTML;
                 } else {
                      unitCostAnalysis.innerHTML = '<p class="text-slate-500">Dados insuficientes.</p>';
                 }
 
-                let priceScenarioData = [], quantityScenarioData = [];
-                priceScenarioResults.innerHTML = '';
-                if ((1 - variableCostsPercent) > 0) {
-                    const requiredTotalRevenue = (fixedCosts + totalDirectCosts + profitGoal) / (1 - variableCostsPercent);
-                    if (isFinite(requiredTotalRevenue) && requiredTotalRevenue >= 0 && totalRevenue > 0) {
-                         productsData.forEach(p => {
-                            const revenueShare = totalRevenue > 0 ? (p.salesGoal * p.sellingPrice) / totalRevenue : 1 / productsData.length;
-                            const requiredProductRevenue = requiredTotalRevenue * revenueShare;
-                            const requiredPrice = p.salesGoal > 0 ? requiredProductRevenue / p.salesGoal : 0;
-                            priceScenarioData.push({name: p.name, requiredPrice});
-                            priceScenarioResults.innerHTML += `<div class="flex justify-between items-center text-sm"><span>${p.name}:</span> <span class="font-bold">${formatCurrency(requiredPrice)}</span></div>`;
-                        });
-                    }
-                }
-
-                quantityScenarioResults.innerHTML = '';
-                const marginPerUnitMix = (totalRevenue * (1 - variableCostsPercent) - totalDirectCosts) / totalUnitsSold;
-                if (isFinite(marginPerUnitMix) && marginPerUnitMix > 0) {
-                    const requiredTotalUnits = (fixedCosts + profitGoal) / marginPerUnitMix;
-                    const multiplier = totalUnitsSold > 0 ? requiredTotalUnits / totalUnitsSold : 0;
-                    productsData.forEach(p => {
-                        const requiredQuantity = p.salesGoal * multiplier;
-                        quantityScenarioData.push({name: p.name, requiredQuantity: Math.ceil(requiredQuantity)});
-                        quantityScenarioResults.innerHTML += `<div class="flex justify-between items-center text-sm"><span>${p.name}:</span> <span class="font-bold">${Math.ceil(requiredQuantity).toLocaleString('pt-BR')} unid.</span></div>`;
-                    });
-                }
-                lastSimulationData = { fixedCosts, variableCostsPercent, profitGoal, productsData, totalRevenue, totalCosts, finalProfit, analysisData, priceScenarioData, quantityScenarioData };
+                lastSimulationData = { fixedCosts, variableCostsPercent, profitGoal, productsData, totalRevenue, totalCosts, finalProfit, analysisData };
             };
 
             const initializePanel = () => {
@@ -914,16 +880,6 @@
                     const row = [p.name, formatNumber(p.directCost), p.salesGoal, formatNumber(p.sellingPrice), formatNumber(p.salesGoal * p.sellingPrice), analysis ? formatNumber(analysis.breakEvenPrice) : 'N/A'].join(";");
                     csvContent += row + "\n";
                 });
-                csvContent += "\n";
-
-                csvContent += "Cenario 1 - Preco Ideal para Atingir a Meta\n";
-                csvContent += "Produto;Preco Ideal Necessario\n";
-                lastSimulationData.priceScenarioData.forEach(p => csvContent += `${p.name};${formatNumber(p.requiredPrice)}\n`);
-                csvContent += "\n";
-
-                csvContent += "Cenario 2 - Venda Necessaria para Atingir a Meta\n";
-                csvContent += "Produto;Venda Necessaria (Unidades)\n";
-                lastSimulationData.quantityScenarioData.forEach(p => csvContent += `${p.name};${p.requiredQuantity}\n`);
                 
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");

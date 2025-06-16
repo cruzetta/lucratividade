@@ -60,6 +60,13 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .csv-instructions {
+            background-color: #f3f4f6;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border-radius: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -91,6 +98,29 @@
                 </div>
 
                 <div class="bg-white rounded-xl shadow-lg p-6 md:p-8 space-y-8">
+                    <!-- Funcionalidade de Importação -->
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-700 border-l-4 border-blue-500 pl-4 mb-4">Importação de Dados</h2>
+                        <div class="flex space-x-4">
+                            <button id="import-products-btn" class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-600 flex items-center">
+                                <i data-lucide="upload-cloud" class="h-5 w-5 mr-2"></i> Importar Produtos (CSV)
+                            </button>
+                             <button id="import-expenses-btn" class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-600 flex items-center">
+                                <i data-lucide="upload-cloud" class="h-5 w-5 mr-2"></i> Importar Despesas (CSV)
+                            </button>
+                        </div>
+                        <input type="file" id="products-csv-input" class="hidden" accept=".csv">
+                        <input type="file" id="expenses-csv-input" class="hidden" accept=".csv">
+
+                        <div class="csv-instructions">
+                            <p class="font-semibold text-gray-800">Como preparar seus ficheiros CSV:</p>
+                            <p class="mt-2 text-sm text-gray-600"><strong>Para Produtos:</strong> Crie 4 colunas no seu Excel, exatamente nesta ordem: `Nome do Produto`, `Custo`, `Preço de Venda`, `Quantidade Vendida`. Sem cabeçalho.</p>
+                            <p class="mt-1 text-sm text-gray-600"><strong>Para Despesas:</strong> Crie 2 colunas: `Nome da Despesa`, `Valor`. Os nomes das despesas devem ser exatos (ex: "Aluguel", "Impostos sobre Faturamento (%)").</p>
+                            <p class="mt-1 text-sm text-gray-600">Depois, no Excel, vá a "Ficheiro > Guardar como" e escolha o formato "CSV (delimitado por vírgulas)".</p>
+                        </div>
+                    </div>
+
+
                     <!-- Entradas do Analisador -->
                     <div>
                         <h2 class="text-xl font-semibold text-gray-700 border-l-4 border-blue-500 pl-4 mb-4">1. Seus Produtos (Média Mensal)</h2>
@@ -132,9 +162,9 @@
                             </div>
                             <div class="space-y-3">
                                 <h3 class="text-lg font-medium text-gray-600">Despesas Variáveis</h3>
-                                <div class="relative input-group"><span class="icon">%</span><input type="number" placeholder="Impostos sobre Faturamento (%)" id="taxesPercentage" class="w-full p-2 border rounded-md"></div>
-                                <div class="relative input-group"><span class="icon">%</span><input type="number" placeholder="Taxas de Cartão/Marketplace (%)" id="feesPercentage" class="w-full p-2 border rounded-md"></div>
-                                <div class="relative input-group"><span class="icon">%</span><input type="number" placeholder="Perdas e Desperdícios (%)" id="wastePercentage" class="w-full p-2 border rounded-md"></div>
+                                <div class="relative input-group"><span class="icon">%</span><input type="number" placeholder="Impostos sobre Faturamento (%)" id="taxesPercentage" class="w-full p-2 border rounded-md" data-key="Impostos sobre Faturamento (%)"></div>
+                                <div class="relative input-group"><span class="icon">%</span><input type="number" placeholder="Taxas de Cartão/Marketplace (%)" id="feesPercentage" class="w-full p-2 border rounded-md" data-key="Taxas de Cartão/Marketplace (%)"></div>
+                                <div class="relative input-group"><span class="icon">%</span><input type="number" placeholder="Perdas e Desperdícios (%)" id="wastePercentage" class="w-full p-2 border rounded-md" data-key="Perdas e Desperdícios (%)"></div>
                             </div>
                         </div>
                     </div>
@@ -213,6 +243,20 @@
                 </div>
                 <div class="card">
                     <h2 class="text-xl font-semibold mb-4 border-b pb-2 text-slate-900">3. Produtos/Serviços</h2>
+                    <!-- NOVA SECÇÃO DE IMPORTAÇÃO PARA A CALCULADORA -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Importar de Planilha</h3>
+                        <button id="import-calculator-products-btn" class="bg-indigo-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-600 flex items-center">
+                            <i data-lucide="upload-cloud" class="h-5 w-5 mr-2"></i> Importar Produtos (CSV)
+                        </button>
+                        <input type="file" id="calculator-csv-input" class="hidden" accept=".csv">
+                        <div class="csv-instructions">
+                            <p class="font-semibold text-gray-800">Como preparar seu ficheiro CSV:</p>
+                            <p class="mt-2 text-sm text-gray-600">Crie até 4 colunas no seu Excel: `Nome do Produto`, `Custo Direto`, `Meta de Vendas`, `Preço de Venda`. Sem cabeçalho.</p>
+                            <p class="mt-1 text-sm text-gray-600">Depois, no Excel, vá a "Ficheiro > Guardar como" e escolha o formato "CSV (delimitado por vírgulas)".</p>
+                        </div>
+                    </div>
+
                     <div id="calculator-product-list" class="space-y-4">
                         <div id="product-template" class="grid grid-cols-12 gap-x-4 gap-y-2 items-end p-2 rounded-lg border border-transparent" style="display: none;">
                             <div class="col-span-12 sm:col-span-4 md:col-span-3">
@@ -287,7 +331,7 @@
                 <h3 class="text-xl font-bold text-gray-800">Quer trocar uma ideia sobre seu negócio?</h3>
                 <p class="text-gray-600 mt-2 mb-4">Vamos conversar sobre como otimizar seus resultados.</p>
                 <a href="https://wa.me/5567999093031" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center bg-green-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-600 transition-transform transform hover:scale-105">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 mr-2"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 mr-2"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path></svg>
                     Fala comigo!
                 </a>
             </div>
@@ -309,7 +353,96 @@
             const fixedExpensesList = section.querySelector('#fixed-expenses-list');
             const addExpenseBtn = section.querySelector('#add-expense-btn');
             const productTemplate = productList.children[0].cloneNode(true);
-            
+
+            // --- LÓGICA DE IMPORTAÇÃO CSV ---
+            const importProductsBtn = section.querySelector('#import-products-btn');
+            const productsCsvInput = section.querySelector('#products-csv-input');
+            const importExpensesBtn = section.querySelector('#import-expenses-btn');
+            const expensesCsvInput = section.querySelector('#expenses-csv-input');
+
+            importProductsBtn.addEventListener('click', () => productsCsvInput.click());
+            importExpensesBtn.addEventListener('click', () => expensesCsvInput.click());
+
+            productsCsvInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    parseProductsCSV(text);
+                };
+                reader.readAsText(file);
+                event.target.value = ''; // Limpar para permitir re-importação do mesmo ficheiro
+            });
+
+            expensesCsvInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const text = e.target.result;
+                    parseExpensesCSV(text);
+                };
+                reader.readAsText(file);
+                event.target.value = ''; // Limpar
+            });
+
+            function parseProductsCSV(csvText) {
+                const rows = csvText.split('\n').filter(row => row.trim() !== '');
+                
+                const existingProductRows = productList.querySelectorAll('.product-item');
+                existingProductRows.forEach(row => row.remove());
+
+                rows.forEach((rowText) => {
+                    const cols = rowText.split(/[,;]/).map(s => s.trim());
+                    if (cols.length < 4) return;
+                    
+                    const newRow = productTemplate.cloneNode(true);
+                    newRow.querySelector('[data-field="name"]').value = cols[0] || '';
+                    newRow.querySelector('[data-field="cost"]').value = cols[1] || '';
+                    newRow.querySelector('[data-field="price"]').value = cols[2] || '';
+                    newRow.querySelector('[data-field="quantity"]').value = cols[3] || '';
+                    productList.appendChild(newRow);
+                });
+                lucide.createIcons();
+            }
+
+            function parseExpensesCSV(csvText) {
+                const rows = csvText.split('\n').filter(row => row.trim() !== '');
+                const otherExpensesContainer = section.querySelector('#fixed-expenses-list');
+                const existingOtherExpenses = new Set();
+                
+                otherExpensesContainer.querySelectorAll('.expense-item [data-field="name"]').forEach(item => {
+                    existingOtherExpenses.add(item.value.toLowerCase());
+                });
+
+                rows.forEach(rowText => {
+                    const cols = rowText.split(/[,;]/).map(s => s.trim());
+                    if (cols.length < 2) return;
+                    
+                    const name = cols[0];
+                    const value = cols[1];
+                    let found = false;
+
+                    section.querySelectorAll('[data-label], [data-key]').forEach(input => {
+                        const key = input.getAttribute('data-label') || input.getAttribute('data-key');
+                        if (key && key.toLowerCase() === name.toLowerCase()) {
+                            input.value = value;
+                            found = true;
+                        }
+                    });
+
+                    if (!found && !existingOtherExpenses.has(name.toLowerCase())) {
+                        const newExpenseRow = createExpenseTemplate();
+                        newExpenseRow.querySelector('[data-field="name"]').value = name;
+                        newExpenseRow.querySelector('[data-field="value"]').value = value;
+                        otherExpensesContainer.appendChild(newExpenseRow);
+                    }
+                });
+                 lucide.createIcons();
+            }
+
+
             const createExpenseTemplate = () => {
                 const div = document.createElement('div');
                 div.className = "expense-item grid grid-cols-12 gap-2 items-center";
@@ -415,6 +548,8 @@
                 const profitLossMessage = section.querySelector('#profit-loss-message');
                 section.querySelector('#net-profit').textContent = formatCurrency(netProfit);
                 
+                resultSection.classList.remove('hidden');
+                
                 if (netProfit >= 0) {
                     profitLossMessage.className = 'p-4 rounded-lg text-center text-xl font-bold mb-6 bg-green-100 text-green-800';
                     profitLossMessage.textContent = "Parabéns! Sua operação está dando lucro.";
@@ -424,12 +559,32 @@
                 }
 
                 updateCharts({ totalCogs, totalExpenses, netProfit, totalRevenue, breakEvenPoint });
-                resultSection.classList.remove('hidden');
                 geminiResultContainer.classList.add('hidden'); 
                 window.scrollTo({ top: resultSection.offsetTop - 80, behavior: 'smooth' });
             });
 
-            function updateCharts(data) { /* ... (código do gráfico inalterado) ... */ }
+            function updateCharts(data) {
+                if (compositionChart) compositionChart.destroy();
+                if (overviewChart) overviewChart.destroy();
+                const compositionCtx = section.querySelector('#compositionChart').getContext('2d');
+                compositionChart = new Chart(compositionCtx, {
+                    type: 'doughnut', data: {
+                        labels: ['Custo Produtos (CMV)', 'Despesas', 'Lucro Líquido'],
+                        datasets: [{ data: [data.totalCogs, data.totalExpenses, data.netProfit > 0 ? data.netProfit : 0], backgroundColor: ['#f97316', '#ef4444', '#16a34a'] }]
+                    }, options: { plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: (c) => `${c.label}: ${formatCurrency(c.raw)}` } } } }
+                });
+                const overviewCtx = section.querySelector('#overviewChart').getContext('2d');
+                overviewChart = new Chart(overviewCtx, {
+                    type: 'bar', data: {
+                        labels: ['Valores Totais'],
+                        datasets: [
+                            { label: 'Faturamento Bruto', data: [data.totalRevenue], backgroundColor: '#3b82f6' },
+                            { label: 'Custos + Despesas', data: [data.totalCogs + data.totalExpenses], backgroundColor: '#ef4444' },
+                            { label: 'Ponto de Equilíbrio', data: [data.breakEvenPoint], backgroundColor: '#8b5cf6' }
+                        ]
+                    }, options: { scales: { y: { ticks: { callback: (v) => formatCurrency(v) } } }, plugins: { tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.raw)}` } } } }
+                });
+            }
             
             geminiBtn.addEventListener('click', async () => {
                 if (Object.keys(lastCalculationData).length === 0) {
@@ -565,6 +720,9 @@
             const priceScenarioResults = section.querySelector('#price-scenario-results');
             const quantityScenarioResults = section.querySelector('#quantity-scenario-results');
             const exportCsvBtn = section.querySelector('#export-calculator-csv-btn');
+            const importBtn = section.querySelector('#import-calculator-products-btn');
+            const csvInput = section.querySelector('#calculator-csv-input');
+
 
             let lastSimulationData = {};
 
@@ -572,6 +730,42 @@
             const formatNumber = (value) => (value || 0).toLocaleString('pt-BR');
             const parseInput = (value, isFloat = true) => (isFloat ? parseFloat(value) : parseInt(value, 10)) || 0;
             
+            // --- LÓGICA DE IMPORTAÇÃO CSV PARA CALCULADORA ---
+            importBtn.addEventListener('click', () => csvInput.click());
+            csvInput.addEventListener('change', event => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = e => parseCalculatorProductsCSV(e.target.result);
+                reader.readAsText(file);
+                event.target.value = '';
+            });
+
+            function parseCalculatorProductsCSV(csvText) {
+                const rows = csvText.split('\n').filter(row => row.trim() !== '');
+                
+                const existingProductRows = productList.querySelectorAll('.grid:not(#product-template)');
+                existingProductRows.forEach(row => row.remove());
+
+                rows.forEach((rowText) => {
+                    const cols = rowText.split(/[,;]/).map(s => s.trim());
+                    if (cols.length < 3) return; // Precisa pelo menos Nome, Custo, Meta
+                    
+                    const newRow = productTemplate.cloneNode(true);
+                    newRow.style.display = 'grid';
+                    newRow.removeAttribute('id');
+                    newRow.querySelectorAll('input').forEach(input => input.classList.add('p-2', 'rounded-md', 'border-slate-300', 'shadow-sm', 'w-full'));
+
+                    newRow.querySelector('[name="product-name"]').value = cols[0] || '';
+                    newRow.querySelector('[name="direct-cost"]').value = cols[1] || '';
+                    newRow.querySelector('[name="sales-goal"]').value = cols[2] || '';
+                    newRow.querySelector('[name="current-price"]').value = cols[3] || ''; // Opcional
+
+                    productList.appendChild(newRow);
+                });
+            }
+
+
             const addNewProduct = () => {
                 const newProductRow = productTemplate.cloneNode(true);
                 newProductRow.style.display = 'grid';

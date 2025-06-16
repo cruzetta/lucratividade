@@ -430,8 +430,77 @@
             });
 
             function updateCharts(data) { /* ... (código do gráfico inalterado) ... */ }
-            geminiBtn.addEventListener('click', async () => { /* ... (lógica da IA inalterada) ... */ });
-            function simpleMarkdownToHtml(text) { /* ... (lógica do markdown inalterada) ... */ }
+            
+            geminiBtn.addEventListener('click', async () => {
+                if (Object.keys(lastCalculationData).length === 0) {
+                    showError("Por favor, calcule a lucratividade primeiro antes de gerar a análise.");
+                    return;
+                }
+                const geminiLoader = section.querySelector('#gemini-loader');
+                const geminiBtnText = section.querySelector('#gemini-btn-text');
+                geminiLoader.classList.remove('hidden');
+                geminiBtnText.classList.add('hidden');
+                geminiBtn.disabled = true;
+                geminiResultContainer.classList.add('hidden');
+
+                const prompt = `Você é um consultor financeiro especialista em restaurantes e pequenos negócios de alimentação no Brasil. Analise os seguintes dados financeiros mensais de um restaurante e forneça um diagnóstico e recomendações. DADOS FINANCEIROS: - Faturamento Bruto: ${formatCurrency(lastCalculationData.totalRevenue)} - Custo dos Produtos Vendidos (CMV): ${formatCurrency(lastCalculationData.totalCogs)} - Despesas Fixas: ${formatCurrency(lastCalculationData.fixedExpenses)} - Despesas Variáveis: ${formatCurrency(lastCalculationData.variableExpensesValue)} - Lucro Líquido Final: ${formatCurrency(lastCalculationData.netProfit)} - Ponto de Equilíbrio: ${formatCurrency(lastCalculationData.breakEvenPoint)} - Detalhes dos Produtos: ${JSON.stringify(lastCalculationData.productData, null, 2)} TAREFA: Crie um relatório conciso com as seguintes seções: 1. **Diagnóstico Rápido:** Um parágrafo resumindo a saúde financeira geral do negócio, mencionando o resultado (lucro ou prejuízo) e a margem líquida. 2. **Pontos Fortes:** Uma lista com 2 ou 3 pontos positivos, como os produtos mais vendidos ou mais lucrativos. 3. **Pontos de Atenção:** Uma lista com 2 ou 3 pontos que precisam de melhoria, como custos elevados ou produtos com baixa performance. 4. **Recomendações Acionáveis:** Uma lista de 3 a 5 sugestões práticas e diretas para aumentar a lucratividade. As sugestões podem envolver preços, marketing, controle de custos ou otimização do cardápio. Use um tom profissional, mas encorajador. Formate a resposta usando Markdown simples.`;
+
+                try {
+                    let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                    const payload = { contents: chatHistory };
+                    const apiKey = "AIzaSyD2zz4YjIVoJtMePYindXVPCu8v86rDKtI";
+
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                    
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                         const errorBody = await response.json();
+                         console.error("Erro da API:", errorBody);
+                         throw new Error(`Erro na API: ${response.statusText} - ${errorBody.error.message}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0 && result.candidates[0].content.parts[0].text) {
+                        const analysisText = result.candidates[0].content.parts[0].text;
+                        geminiResultContainer.innerHTML = simpleMarkdownToHtml(analysisText);
+                        geminiResultContainer.classList.remove('hidden');
+                    } else {
+                        console.error("Resposta da API inválida ou bloqueada:", JSON.stringify(result, null, 2));
+                        throw new Error("A resposta da API não continha o texto esperado. Isso pode acontecer devido a filtros de segurança ou um erro inesperado.");
+                    }
+                } catch (error) {
+                    console.error("Erro completo no bloco catch:", error);
+                    geminiResultContainer.innerHTML = `<p class="text-red-600">Ocorreu um erro ao gerar a análise. Verifique se a Chave da API está correta e tente novamente. <br><br><strong>Detalhe técnico:</strong> ${error.message}</p>`;
+                    geminiResultContainer.classList.remove('hidden');
+                } finally {
+                    geminiLoader.classList.add('hidden');
+                    geminiBtnText.classList.remove('hidden');
+                    geminiBtn.disabled = false;
+                }
+            });
+
+            function simpleMarkdownToHtml(text) {
+                 if (typeof text !== 'string' || !text) {
+                    return '<p>Nenhuma análise de texto recebida da IA.</p>';
+                }
+                let html = text
+                    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+                    .replace(/\*(.*)\*/gim, '<em>$1</em>')
+                    .replace(/^\s*\n\*/gm, '<ul>\n*')
+                    .replace(/^(\*.+)\s*\n([^*])/gm, '$1\n</ul>\n$2')
+                    .replace(/^\* (.*$)/gim, '<li>$1</li>');
+                
+                return html.split('\n').map(p => p.startsWith('<') || p.trim() === '' ? p : `<p>${p}</p>`).join('');
+             }
             
             exportCsvBtn.addEventListener('click', () => {
                 if (Object.keys(lastCalculationData).length === 0) return alert("Calcule a lucratividade primeiro.");
@@ -457,26 +526,17 @@
                 });
                 csvContent += "\n";
                 
-                // --- INÍCIO DA CORREÇÃO ---
                 csvContent += "Detalhes das Despesas\n";
                 csvContent += "Tipo;Item;Valor\n";
-                // Despesas Fixas Padrão
                 lastCalculationData.fixedExpensesInputs.forEach(input => {
                     const label = input.getAttribute('data-label') || 'Despesa';
                     const value = parseFloat(input.value) || 0;
-                    if (value > 0) {
-                        csvContent += `Fixa;${label};${formatNumber(value)}\n`;
-                    }
+                    if (value > 0) csvContent += `Fixa;${label};${formatNumber(value)}\n`;
                 });
-                // Outras Despesas Fixas
-                lastCalculationData.otherFixedExpenses.forEach(expense => {
-                    csvContent += `Fixa;${expense.name};${formatNumber(expense.value)}\n`;
-                });
-                // Despesas Variáveis
+                lastCalculationData.otherFixedExpenses.forEach(expense => csvContent += `Fixa;${expense.name};${formatNumber(expense.value)}\n`);
                 csvContent += `Variavel (%);Impostos (%);${lastCalculationData.taxesPercentage}\n`;
                 csvContent += `Variavel (%);Taxas (%);${lastCalculationData.feesPercentage}\n`;
                 csvContent += `Variavel (%);Perdas (%);${lastCalculationData.wastePercentage}\n`;
-                // --- FIM DA CORREÇÃO ---
                 
                 const encodedUri = encodeURI(csvContent);
                 const link = document.createElement("a");

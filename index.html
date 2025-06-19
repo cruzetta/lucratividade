@@ -67,6 +67,9 @@
             margin-top: 1.5rem;
             border-radius: 0.5rem;
         }
+        .btn-save-feedback {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -364,7 +367,12 @@
                                 </div>
                             </div>
                         </div>
-                        <p class="text-xs text-slate-500 mt-4">Estes valores ficam salvos no seu navegador para facilitar o uso diário.</p>
+                        <div class="mt-6 text-right">
+                           <button id="save-daily-config-btn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 flex items-center justify-center ml-auto btn-save-feedback">
+                                <i data-lucide="save" class="h-5 w-5 mr-2"></i>
+                                <span class="btn-text">Salvar Configurações</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Card do Cardápio -->
@@ -511,6 +519,12 @@
                             <div id="daily-profit-loss-card" class="p-4 rounded-lg text-center transition-colors duration-300 mt-3">
                                 <p class="text-lg font-bold uppercase">(=) Resultado do Dia</p>
                                 <p id="daily-profit-loss-result" class="text-4xl font-extrabold mt-1">R$ 0,00</p>
+                            </div>
+                             <div class="mt-4">
+                                <button id="export-daily-report-btn" class="w-full bg-gray-700 text-white font-semibold py-2 px-4 rounded-md hover:bg-gray-800 flex items-center justify-center">
+                                    <i data-lucide="download" class="h-5 w-5 mr-2"></i>
+                                    Baixar Relatório do Dia (CSV)
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1109,6 +1123,7 @@
             if (!section) return;
 
             // --- Elementos da UI ---
+            const saveConfigBtn = section.querySelector('#save-daily-config-btn');
             const monthlyExpensesInput = section.querySelector('#daily-calc-monthly-expenses');
             const workingDaysInput = section.querySelector('#daily-calc-working-days');
             const taxPercentageInput = section.querySelector('#daily-calc-tax-percentage');
@@ -1136,6 +1151,7 @@
             const extraExpensesListUl = section.querySelector('#extra-expenses-list');
             
             const historyLogContainer = section.querySelector('#daily-calc-history-log');
+            const exportDailyReportBtn = section.querySelector('#export-daily-report-btn');
 
             // --- Elementos de resultado ---
             const dailyFixedCostEl = section.querySelector('#daily-fixed-cost-result');
@@ -1151,7 +1167,7 @@
             section.querySelector('#current-date-display').textContent = currentDate;
             const todayKey = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
 
-            const STORAGE_KEY = 'dailyCalculatorData_v2'; // Nova chave para evitar conflito
+            const STORAGE_KEY = 'dailyCalculatorData_v3'; // Nova chave para evitar conflito
 
             // --- Estrutura de dados ---
             const getDefaultData = () => ({
@@ -1162,7 +1178,7 @@
                     cardFeePercentage: ''
                 },
                 masterProducts: [],
-                dailyLogs: {}, // Estrutura: { 'YYYY-MM-DD': { sales: [], extraExpenses: [], staff: {}, summary: {} } }
+                dailyLogs: {}, 
             });
 
             let data = getDefaultData();
@@ -1185,7 +1201,6 @@
                 if (savedData) {
                     try {
                         const parsedData = JSON.parse(savedData);
-                        // Merge com o padrão para garantir que todas as chaves existam
                         data = { ...getDefaultData(), ...parsedData };
                         data.config = { ...getDefaultData().config, ...parsedData.config };
                         data.dailyLogs = parsedData.dailyLogs || {};
@@ -1194,7 +1209,6 @@
                         data = getDefaultData();
                     }
                 }
-                // Garante que o log do dia atual existe
                 if (!data.dailyLogs[todayKey]) {
                     data.dailyLogs[todayKey] = { sales: [], extraExpenses: [], staff: { count: '', cost: '' } };
                 }
@@ -1203,24 +1217,17 @@
 
             // --- Atualização da Interface do Usuário ---
             function updateUIFromData() {
-                // Configurações
                 monthlyExpensesInput.value = data.config.monthlyExpenses;
                 workingDaysInput.value = data.config.workingDays;
                 taxPercentageInput.value = data.config.taxPercentage;
                 cardFeePercentageInput.value = data.config.cardFeePercentage;
-
-                // Cardápio
                 renderMasterProductList();
                 populateProductSelect();
-
-                // Lançamentos do dia
                 const todayLog = data.dailyLogs[todayKey];
                 staffCountInput.value = todayLog.staff.count;
                 staffCostInput.value = todayLog.staff.cost;
                 renderDailySalesTable();
                 renderExtraExpensesList();
-                
-                // Histórico e Resumo
                 renderHistory();
                 calculateAndDisplaySummary();
             }
@@ -1250,7 +1257,6 @@
                 const canSell = data.masterProducts.length > 0;
                 addSaleBtn.disabled = !canSell;
                 productSelect.disabled = !canSell;
-                
                 data.masterProducts.forEach((p, index) => {
                     const option = document.createElement('option');
                     option.value = index;
@@ -1313,16 +1319,13 @@
                 let historyFound = false;
                 sortedDays.forEach(dayKey => {
                     if(dayKey === todayKey) return; 
-
                     const log = data.dailyLogs[dayKey];
                     if (!log.summary || log.summary.revenue === 0) return; 
-                    
                     historyFound = true;
                     const summary = log.summary;
                     const dateFormatted = new Date(dayKey + 'T12:00:00').toLocaleDateString('pt-BR');
                     const isProfit = summary.profitLoss >= 0;
                     const profitClass = isProfit ? 'text-green-600' : 'text-red-600';
-
                     const div = document.createElement('div');
                     div.className = 'p-3 bg-slate-50 rounded-md border text-sm';
                     div.innerHTML = `
@@ -1347,31 +1350,24 @@
             function calculateAndDisplaySummary() {
                 const config = data.config;
                 const todayLog = data.dailyLogs[todayKey];
-
                 const monthlyExpenses = parseValue(config.monthlyExpenses);
                 const workingDays = parseInt(config.workingDays, 10) || 1;
                 const dailyFixedCost = monthlyExpenses / workingDays;
-
                 const dailyRevenue = todayLog.sales.reduce((sum, sale) => {
                     const product = data.masterProducts.find(p => p.name === sale.name);
                     return sum + (product ? product.price * sale.quantity : 0);
                 }, 0);
-
                 const dailyCogs = todayLog.sales.reduce((sum, sale) => {
                     const product = data.masterProducts.find(p => p.name === sale.name);
                     return sum + (product ? product.cost * sale.quantity : 0);
                 }, 0);
-                
                 const taxPercentage = parseValue(config.taxPercentage) / 100;
                 const cardFeePercentage = parseValue(config.cardFeePercentage) / 100;
                 const variableExpenses = dailyRevenue * (taxPercentage + cardFeePercentage);
-                
                 const staffTotalCost = (parseValue(todayLog.staff.count) * parseValue(todayLog.staff.cost));
                 const extraExpensesTotal = todayLog.extraExpenses.reduce((sum, exp) => sum + exp.value, 0);
-                
                 const profitLoss = dailyRevenue - dailyCogs - dailyFixedCost - variableExpenses - staffTotalCost - extraExpensesTotal;
 
-                // Salva o resumo no log do dia
                 todayLog.summary = {
                     fixedCost: dailyFixedCost,
                     revenue: dailyRevenue,
@@ -1381,8 +1377,7 @@
                     extraExpenses: extraExpensesTotal,
                     profitLoss: profitLoss
                 };
-                saveData(); 
-
+                
                 // Atualiza a UI
                 dailyFixedCostEl.textContent = formatCurrency(dailyFixedCost);
                 dailyRevenueEl.textContent = formatCurrency(dailyRevenue);
@@ -1397,31 +1392,29 @@
                 } else {
                     profitLossCard.className = 'p-4 rounded-lg text-center transition-colors duration-300 bg-red-100 text-red-800';
                 }
+                 // Não chamar saveData() aqui para evitar loops. O save é feito após ações do usuário.
             }
-
 
             // --- Event Listeners ---
-            function setupConfigListeners() {
-                [monthlyExpensesInput, workingDaysInput, taxPercentageInput, cardFeePercentageInput].forEach(input => {
-                    input.addEventListener('change', (e) => {
-                        const key = e.target.id.split('daily-calc-')[1].replace(/-/g, '_');
-                        // Remapeia para a chave correta no objeto de configuração
-                        const configKey = {
-                            monthly_expenses: 'monthlyExpenses',
-                            working_days: 'workingDays',
-                            tax_percentage: 'taxPercentage',
-                            card_fee_percentage: 'cardFeePercentage'
-                        }[key];
+            saveConfigBtn.addEventListener('click', () => {
+                data.config.monthlyExpenses = monthlyExpensesInput.value;
+                data.config.workingDays = workingDaysInput.value;
+                data.config.taxPercentage = taxPercentageInput.value;
+                data.config.cardFeePercentage = cardFeePercentageInput.value;
+                saveData();
+                calculateAndDisplaySummary();
+                
+                const btnText = saveConfigBtn.querySelector('.btn-text');
+                saveConfigBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                saveConfigBtn.classList.add('bg-green-500');
+                btnText.textContent = 'Salvo!';
+                setTimeout(() => {
+                    saveConfigBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    saveConfigBtn.classList.remove('bg-green-500');
+                    btnText.textContent = 'Salvar Configurações';
+                }, 2000);
+            });
 
-                        if (configKey) {
-                            data.config[configKey] = e.target.value;
-                            saveData();
-                            calculateAndDisplaySummary();
-                        }
-                    });
-                });
-            }
-            
             importMenuBtn.addEventListener('click', () => menuCsvInput.click());
             menuCsvInput.addEventListener('change', (event) => {
                 const file = event.target.files[0];
@@ -1446,6 +1439,7 @@
 
                 if (newProducts.length > 0) {
                     data.masterProducts = newProducts;
+                    data.masterProducts.sort((a, b) => a.name.localeCompare(b.name));
                     saveData();
                     updateUIFromData();
                     alert(`${newProducts.length} produtos foram importados com sucesso!`);
@@ -1467,7 +1461,7 @@
                     return;
                 }
                 data.masterProducts.push({ name, cost, price });
-                data.masterProducts.sort((a, b) => a.name.localeCompare(b.name)); // Ordena
+                data.masterProducts.sort((a, b) => a.name.localeCompare(b.name));
                 saveData();
                 renderMasterProductList();
                 populateProductSelect();
@@ -1484,6 +1478,7 @@
                         saveData();
                         renderMasterProductList();
                         populateProductSelect();
+                        calculateAndDisplaySummary();
                     }
                 }
             });
@@ -1549,9 +1544,66 @@
                 }
             });
 
+            exportDailyReportBtn.addEventListener('click', () => {
+                const summary = data.dailyLogs[todayKey].summary;
+                if(!summary || summary.revenue === 0) {
+                    alert("Não há dados de faturamento para exportar hoje.");
+                    return;
+                }
+                
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += `Relatorio do Dia;${currentDate}\n\n`;
+
+                csvContent += "Resumo Financeiro\n";
+                csvContent += `Faturamento Bruto;${(summary.revenue || 0).toFixed(2)}\n`;
+                csvContent += `Custo dos Produtos (CMV);-${(summary.cogs || 0).toFixed(2)}\n`;
+                csvContent += `Custo Fixo do Dia;-${(summary.fixedCost || 0).toFixed(2)}\n`;
+                csvContent += `Despesas Variáveis (Taxas);-${(summary.variableExpenses || 0).toFixed(2)}\n`;
+                csvContent += `Custo com Diaristas;-${(summary.staffCost || 0).toFixed(2)}\n`;
+                csvContent += `Despesas Extras;-${(summary.extraExpenses || 0).toFixed(2)}\n`;
+                csvContent += `RESULTADO FINAL (LUCRO/PREJUIZO);${(summary.profitLoss || 0).toFixed(2)}\n\n`;
+
+                csvContent += "Detalhe das Vendas\n";
+                csvContent += "Produto;Qtd;Preco Venda Unit.;Custo Unit.;Faturamento Total;Custo Total\n";
+                data.dailyLogs[todayKey].sales.forEach(sale => {
+                    const product = data.masterProducts.find(p => p.name === sale.name);
+                    const totalRevenue = product.price * sale.quantity;
+                    const totalCost = product.cost * sale.quantity;
+                    const row = [sale.name, sale.quantity, product.price.toFixed(2), product.cost.toFixed(2), totalRevenue.toFixed(2), totalCost.toFixed(2)].join(";");
+                    csvContent += row + "\n";
+                });
+                csvContent += "\n";
+
+                const extraExpenses = data.dailyLogs[todayKey].extraExpenses;
+                if(extraExpenses.length > 0) {
+                    csvContent += "Detalhe das Despesas Extras\n";
+                    csvContent += "Descricao;Valor\n";
+                    extraExpenses.forEach(exp => {
+                         csvContent += `${exp.desc};${exp.value.toFixed(2)}\n`;
+                    });
+                    csvContent += "\n";
+                }
+                
+                const staff = data.dailyLogs[todayKey].staff;
+                if(parseValue(staff.count) > 0){
+                     csvContent += "Detalhe Custo com Diaristas\n";
+                     csvContent += `Numero de Diaristas;${staff.count}\n`;
+                     csvContent += `Custo por Diarista;${parseValue(staff.cost).toFixed(2)}\n`;
+                     csvContent += `Custo Total;${(parseValue(staff.count) * parseValue(staff.cost)).toFixed(2)}\n\n`;
+                }
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `relatorio_diario_${todayKey}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+
             // --- INICIALIZAÇÃO ---
             loadData();
-            setupConfigListeners();
             lucide.createIcons();
         });
     </script>
